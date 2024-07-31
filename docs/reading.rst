@@ -39,8 +39,8 @@ This scheme is implemented in the burst analysis program
 (see `code <https://github.com/tritemio/FRETBursts/blob/master/fretbursts/loader.py#L226>`_ for full details).
 
 
- Read Photon-HDF5 files
- ''''''''''''''''''''''
+Read Photon-HDF5 files
+''''''''''''''''''''''
 
 1. Get the Photon-HDF5 version from ``format_version`` root-node attribute
    (see :ref:`root_params`). The version must be ``'0.4'`` or greater.
