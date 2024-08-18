@@ -373,7 +373,9 @@ Detectors group
 ^^^^^^^^^^^^^^^^
 
 *New in version 0.5.* The group ``/setup/detectors/``
-contains arrays with one element per detector's pixel.  The allowed fields are:
+contains arrays with one element per detector (detector id aka pixel).
+This group may be **absent** *if* the :ref:`/photon_data/<photon_data>` group(s) do **not** contain ``detectors`` arrays.
+The allowed fields are:
 
     - **id** (array of int): *Mandatory.* Number used by in
       ``/photon_data/detectors`` to identify the :ref:`record ID <record_ids>`.
@@ -558,7 +560,7 @@ Also, if some information is not available the relative field may be omitted.
 User group
 ----------
 
-The `user` group is reserved for user defined fields.
+The ``/user/`` group is reserved for user defined fields.
 There are no specific definitions for the groups contained within `user`.
 Nor will standard readers of *photon-HDF5* files use any fields withing this group.
 
@@ -570,6 +572,12 @@ If the data is being converted from a format like .ptu from picoquant or .spc fr
 Beckr&Hickl, some metadata stored in the file is not included in the official photon-HDF5
 specification. This metadata should be stored in a group named by the company manufacturing
 the original data file (i.e. `picoquant` for .ptu files, `becker_hickl` for .spc files).
+
+The ``user`` group can also be used to store results of various type of analysis.
+Such data should be stored in a sub-group named according to the software used
+for such analysis.
+For instance, FRETBursts, if directed to do so, will save results of burst
+analysis under the group ``/user/FRETBursts``.
 
 .. _exp_settings:
 
