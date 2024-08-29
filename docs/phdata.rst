@@ -93,7 +93,7 @@ Mandatory fields:
 Optional if there is only 1 detector, otherwise mandatory:
 
 - **detectors**: (array of integers) :ref:`detector IDs<record_ids>` for each timestamp.
-  Must be teh same length as ``timestamps``. Typical data-type uint8.
+  Must be the same length as ``timestamps``. Typical data-type uint8.
 
 When the dataset contains TCSPC or nanotime information (i.e. arrival time of each
 photon with respect to a laser pulse), the following
