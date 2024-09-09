@@ -46,9 +46,15 @@ A brief description of these 3 metadata groups follows:
 - :ref:`/sample/<sample_group>`:
   Description of the measured sample.
 
-Finally, the group :ref:`/user/<user_group>` may also be included for
-file creators to store any additional data they see fit. The ``/user/``
-group is ignored by official photon-HDF5 readers.
+Finally, the group :ref:`/user/<user_group>` may be included to store
+additional data not defined in the Photon-HDF5 spec.
+Unlike all other groups, the contents of the ``/user/`` group are not
+rigidly defined. However, guidelines are provided for how data should
+be stored and what should be included.
+
+.. note::
+    Since the format of the :ref:`/user/<user_group>` group is not rigid, it will be ignored
+    by official readers.
 
 
 .. _root_params:
@@ -74,7 +80,7 @@ Photon-data group
 -----------------
 
 This section describes the layout and fields in the ``/photon_data/`` group.
-Note that only the kind of data is specified (i.e. scalar,
+Note that only the kind of data is specified (i.e. scalar (float or integer),
 integer array, float array), but no data type size is mandated.
 For arrays, the most commonly used data-type is indicated.
 
@@ -86,20 +92,20 @@ For arrays, the most commonly used data-type is indicated.
 
 Mandatory fields:
 
-- **timestamps**: (array of integers) photon timestamps. Typical data-type int64.
+- **timestamps**: (integer array) photon timestamps. Typical data-type int64.
 - **timestamps_specs/**
     - **timestamps_unit**: (float) timestamp units in *seconds*.
 
 Optional if there is only 1 detector, otherwise mandatory:
 
-- **detectors**: (array of integers) :ref:`detector IDs<record_ids>` for each timestamp.
+- **detectors**: (integer array) :ref:`detector IDs<detector_ids>` for each timestamp.
   Must be the same length as ``timestamps``. Typical data-type uint8.
 
 When the dataset contains TCSPC or nanotime information (i.e. arrival time of each
 photon with respect to a laser pulse), the following
 fields must be present:
 
-- **nanotimes**: (array of integers) TCSPC nanotimes. Conventionally the time
+- **nanotimes**: (integer array) TCSPC nanotimes. Conventionally the time
   axis direction is the "natural" direction, i.e. lifetime decays look
   correctly oriented in time. Must be the same length as ``timestamps``
   For more details see :ref:`nanotimes_time_axis`.
@@ -122,7 +128,7 @@ fields must be present:
 
 Finally, if the data come from a simulation, ``/photon_data/`` may contain:
 
--  **particles**: (array of integers) a particle ID (integer) for each
+-  **particles**: (integer array) a particle ID (integer) for each
    timestamp. Typical data-type uint8.
 
 .. _measurement_specs_group:
@@ -155,23 +161,24 @@ In Photon-HDF5 <0.5, each type of measurement required a distinct
 ``measurement_type``, which was inconvenient for supporting
 many variants of common measurements. In Photon-HDF5 0.5+
 we added a :doc:`"generic" measurement type <generic>` which supports
-a large combination of setup configurations. In this case, values in
-``/setup/`` will determine  mandatory ``measurement_specs/`` fields.
+an arbitrary range of setup configurations. In this case, values
+in :ref:`/setup/ <setup_group>` will determine the
+mandatory fields in the :ref:`measurement_specs/ <measurement_specs_group>` group.
 The "generic" measurement type is recommended to be used in most cases
-as it covers all other types.
+as it covers all other types possible within the photon-HDF5 spec.
 
 If you feel that a new "specific" measurement type would be especially
 useful to add for your application we have :doc:`instructions <new_measurement_specs>`
 to propose a new one.
 
 The following ``measurement_specs`` fields are used to specify key values for
-computing which photon stream a given photon belongs to in
-alternated/interleaved excitations (both continuous wave and pulsed excitation).
+determining to which photon stream a given photon belongs when using
+alternated/interleaved excitation (both continuous wave and pulsed excitation).
 
 For continuous wave excitation with any number of colors:
 
 - **alex_period**: (integer or float) [μs-ALEX only] duration of one complete
-  excitation alternation period expressed in timestamp units. The alternation
+  excitation alternation period expressed in *timestamp units*. The alternation
   period is equal to ``alex_period * timestamps_unit``.
 
 - **alex_offset**: (scalar) [μs-ALEX only] Time offset (in timestamps units)
@@ -187,7 +194,7 @@ When ``photon_data/nanotimes`` is present the following is mandatory:
 For alternated excitation experiments (e.g. μs-ALEX and ns-ALEX), the following
 fields are used to specify the alternation period:
 
-- **alex_excitation_period1**: (array with an even-number of integer
+- **alex_excitation_period1**: (integer array with an even-number of
   elements, normally 2) start and stop values identifying the excitation
   periods for the **first** wavelength in ``/setup/excitation_wavelengths``
   (which is the shortest wavelength).
@@ -195,7 +202,7 @@ fields are used to specify the alternation period:
   *donor excitation period*.
   See also :ref:`wavelengths_order` and note below.
 
-- **alex_excitation_period2**: (array with an even-number of integer
+- **alex_excitation_period2**: (integer array with an even-number of
   elements, normally 2) start and stop values identifying the excitation
   periods for the **second** wavelength in ``/setup/excitation_wavelengths``.
   In smFRET experiments with 2-colors excitation this field defines the
@@ -204,7 +211,7 @@ fields are used to specify the alternation period:
 
 For 3 (or more) colors alternated or interleaved excitation:
 
-- **alex_excitation_period3**: (array with an even-number of integer
+- **alex_excitation_period3**: (integer array with an even-number of
   elements, normally 2) start and stop values identifying the excitation
   periods for the **third** wavelength in ``/setup/excitation_wavelengths``.
   See also :ref:`wavelengths_order` and note below.
@@ -220,7 +227,11 @@ For 3 (or more) colors alternated or interleaved excitation:
     of elements, comprising as many start-stop nanotime pairs as
     there are excitation periods within the TAC/TDC range.
     In this case the values are expressed in *nanotimes units* as defined in
-    ``nanotimes_specs/tcspc_unit``
+    ``nanotimes_specs/tcspc_unit``. If their is a single pair of start-stop
+    times, then the array should be 1D, but if multiple start-stop pairs are
+    specified, it is preferable to specify each pair in a separate row, thus
+    resulting in a 2D array of shape Nx2. If the array is 1D official readers
+    will tread ever consecutive pair of points as a separate start-stop pair.
 
     For more details see :ref:`alex_period_def`.
 
@@ -230,9 +241,10 @@ Detectors specs
 """""""""""""""
 
 Within ``measurement_specs/``, the ``detectors_specs/`` sub-group
-contains all the :ref:`record ID<record_ids>`--event
-associations, i.e. spectral bands, polarizations,
-:ref:`beam-split channels<beam_split_ch>`, and markers.
+contains all the :ref:`detector ID<detector_ids>`--event
+associations, i.e. spectral bands,
+polarizations, :ref:`beam-split channels<beam_split_ch>`,
+and non-photon events.
 
 When a measurement records more than 1 spectral band, the fields:
 
@@ -240,14 +252,15 @@ When a measurement records more than 1 spectral band, the fields:
 - **spectral_ch2**
 - etc...
 
-specify which detector (pixel) is employed in each spectral band. When the
+specify which detector is employed in each spectral band. When the
 measurement records only 1 spectral band these fields may be omitted. The
-spectral bands are strictly ordered for increasing wavelengths.
+spectral bands are strictly ordered for increasing wavelengths
+(see :ref:`wavelength_order`).
 For example, for 2-color smFRET measurements
 ``spectral_ch1`` and ``spectral_ch2`` represent the
 *donor* and *acceptor* channel respectively.
 
-If a measurement records more than 1 polarization states, the fields:
+If a measurement records more than 1 polarization state, the fields:
 
 - **polarization_ch1**
 - **polarization_ch2**
@@ -265,23 +278,23 @@ beam-splitter the fields:
 
 specify which detector pixel is used in each of the "beam-split" channels.
 
-If :ref:`marker_ids` are also recorded, then the fields (*new in v0.5*):
+If :ref:`non-photon IDs <non_photon_ids>` are also recorded, then the fields (*new in v0.5*):
 
-- **markers1**
-- **markers2**
+- **non_photon_ch1**
+- **non_photon_ch2**
 - etc...
 
-are used to categorize each marker id. Currently there are no specifications
+are used to categorize each non-photon id. Currently there are no specifications
 for the type of markers. These should be explained in
 the :ref:`/user/experimental_settings<exp_settings>` group for human readable
-understanding enabling custom code to be written to process these markers.
-All official software for v0.5 will ignore data points specified as markers.
+understanding enabling *custom* code to be written to process these detector IDs.
+All official software for v0.5 will ignore data points specified as non-photon IDs.
 Future releases may specify sorts of measurements that will have defined uses
-for particular markers.
+for particular non-photon IDs.
 
-All previous fields are arrays containing one or more :ref:`record IDs<record_ids>`
+All previous fields are arrays containing one or more :ref:`detector IDs<detector_ids>`
 (Detector IDs for all ``spectral_chX``, ``polarization_ch1`` and ``split_chX``,
-and :ref:`marker IDs <marker_ids>` for ``markersX``).
+and :ref:`non-photon IDs <non_photon_ids>` for ``non_photon_chX``).
 For example, a 2-color smFRET measurement without polarization or split channels
 (2 detectors) will have only one value in ``spectral_ch1`` (donor) and one value in
 ``spectral_ch2`` (acceptor). A 2-color smFRET measurement with polarization
@@ -341,8 +354,8 @@ When setup is present, the following 9 fields are mandatory:
   This equation is not valid when the optical setup has non-symmetric branches,
   for example if the emission path is split in two spectral bands and only
   one of the two is further split in two polarizations.
-  This only counts actual detectors, and does not
-  include :ref:`marker IDs <marker_ids>`.
+  This only counts actual detectors that produces photon IDs, and does not
+  include :ref:`non-photon IDs <non_photon_ids>`.
 
 - **excitation_cw**: (array of booleans) for each excitation source,
   this field indicates whether excitation is continuous wave (CW), *True*,
@@ -377,45 +390,39 @@ contains arrays with one element per detector (detector id aka pixel).
 This group may be **absent** *if* the :ref:`/photon_data/<photon_data>` group(s) do **not** contain ``detectors`` arrays.
 The allowed fields are:
 
-    - **id** (array of int): *Mandatory.* Number used by in
-      ``/photon_data/detectors`` to identify the :ref:`record ID <record_ids>`.
-      This include both normal detector IDs and marker IDs.
-    - **id_hardware** (array of int): *Optional.* Detector numbers as used by the
+    - **id** (integer array): *Mandatory.* Number used by in
+      ``/photon_data/detectors`` to identify the :ref:`detector ID <detector_ids>`.
+      This include both normal photon IDs and non-photon IDs.
+    - **id_hardware** (integer array): *Optional.* Detector numbers as used by the
       acquisition hardware if different from ``id``.
-    - **spot** (array of int): *Multispot only, mandatory.* The spot number each
+    - **spot** (integer array): *Multispot only, mandatory.* The spot number each
       detector ID is used in. If present, must be of the same length as ``id``.
     - **label** (array of string): *Optional.* A human-readable label for each detector, including marker IDs.
       If present, must be of the same length as ``id``.
     - **module** (array of string): *Multispot only, optional.* Name of the module each
       pixel belongs to. If present, must be of the same length as ``id``.
-    - **position** (2-D array of int): *Multispot only, optional.* Columns are x,y
+    - **position** (2-D integer array): *Multispot only, optional.* Columns are x,y
       positions of each spot in the array. Must be of the length specified 
       in ``num_spots``.
-    - **tcspc_unit:** (array of float) array of TAC/TDC bin size (in seconds).
+    - **tcspc_unit:** (float array) array of TAC/TDC bin size (in seconds).
       Present only if ``/setup/lifetime`` is True and if TCSPC info is different
       for each detector. If present, must be of the same length as ``id``.
       This value should be 0 for positions corresponding to marker IDs
-    - **tcspc_num_bins:** (array of integer) array of number of TAC/TDC bins. Present
+    - **tcspc_num_bins:** (integer array) array of number of TAC/TDC bins. Present
       only if ``/setup/lifetime`` is True and if TCSPC info is different
       for each detector. If present, must be of the same length as ``id``.
       This value should be 0 for positions corresponding to 0 for marker ids.
-    - **tcspc_offset:** (array of int) *Optional* Offset per record ID (as in ``id``) to add to
+    - **tcspc_offset:** (integer array) *Optional* Offset per record ID (as in ``id``) to add to
       nanotime to account for speed of light delays between detectors. When using pulsed
       interleaved excitation, the nanotimes window for a given detector is defined by
       ``/photon_data/measurement_specs/alex_excitation_periodX + tcspc_offset``. Should be 0
-      for at least 1 :ref:`detector ID<record_ids>`, and default 0 for :ref:`marker IDs<marker_ids>`,
+      for at least 1 :ref:`photon ID<detector_ids>`, and default 0 for :ref:`non-photon IDs<non_photon_ids>`,
       for which value is irrelevant.
-    - **counts** (array of int): *Optional.* Number of timestamps counted by each
+    - **counts** (integer array): *Optional.* Number of timestamps counted by each
       record ID. If present, must be of the same length as ``id``.
-    - **dcr** (array of float): *Optional.* Dark counting rate in Hz for each pixel.
-      If present, must be of the same length as ``id``.
-      This value should be 0 for positions corresponding to 0 for marker IDs.
-    - **afterpulsing** (array of float): *Optional.* Afterpulsing probability
-      for each record ID. If present, must be of the same length as ``id``.
-      This value should be 0 for positions corresponding to 0 for marker ids.
 
-For more info see
-:ref:`Group /setup/detectors<setup_detectors_group>`.
+
+For more info see :ref:`Group /setup/detectors<setup_detectors_group>`.
 
 .. _optional_setup_fields:
 
@@ -429,41 +436,41 @@ information is irrelevant or not available.
 The following fields are arrays, one element per excitation source,
 in the order of increasing wavelengths:
 
-- **excitation_wavelengths**: (array of floats) list of excitation wavelengths
+- **excitation_wavelengths**: (float array) list of excitation wavelengths
   (center wavelength if broad-band) in increasing order (unit: *meter*).
 
-- **laser_repetition_rates**: (array of floats)  *New in version 0.5.*
+- **laser_repetition_rates**: (float array)  *New in version 0.5.*
   The laser repetition rate in Hz for each excitation source.
   This field is mandatory only if there is at least one pulsed excitation
   source. When there are both CW and pulsed lasers, the CW lasers will have
   a value of 0 in this field.
 
-- **excitation_polarizations**: (arrays of floats) list of polarization
+- **excitation_polarizations**: (float arrays) list of polarization
   angles (in degrees) for each excitation source.
 
-- **excitation_input_powers**: (array of floats) excitation power in *Watts*
+- **excitation_input_powers**: (float array) excitation power in *Watts*
   for each excitation source. This is the excitation power entering
   the optical system.
 
-- **excitation_intensity**: (array of floats) excitation intensity in the
+- **excitation_intensity**: (float array) excitation intensity in the
   sample for each excitation source (units: *W/m²*).
   In the case of confocal excitation this is the peak PSF intensity.
 
 The following fields are also arrays:
 
-- **detection_wavelengths**: (arrays of floats) reference wavelengths (in
+- **detection_wavelengths**: (float array) reference wavelengths (in
   *meters*) for each detection spectral band.
   This array is ordered in increasing order of wavelengths.
   The first element refers to ``detectors_specs/spectral_ch1``, the second to
   ``detectors_specs/spectral_ch2`` and so on.
 
-- **detection_polarizations**: (arrays of floats) polarization angles
+- **detection_polarizations**: (float array) polarization angles
   for each detection polarization band.
   The first element refers to ``detectors_specs/polarization_ch1``, the second
   to ``detectors_specs/polarization_ch2`` and so on.
   This field is not relevant if no polarization selection is performed.
 
-- **detection_split_ch_ratios**: (array of floats) power fraction detected
+- **detection_split_ch_ratios**: (float array) power fraction detected
   by each "beam-split" channel (i.e. independent detection channels
   obtained through a non-polarizing beam splitter). For 2 beam-split
   channels that receive the same power this array should be ``[0.5, 0.5]``.
@@ -561,17 +568,17 @@ User group
 ----------
 
 The ``/user/`` group is reserved for user defined fields.
-There are no specific definitions for the groups contained within `user`.
+There are no specific definitions for the groups contained within ``/user/``.
 Nor will standard readers of *photon-HDF5* files use any fields withing this group.
 
 This group is intended to be used to store data not covered by the official photon-HDF5
 specification. While there is not required format for this group, some suggestions are
-provided.
+provided, most notably the :ref:`experimental_settings/ <exp_settings>` group.
 
 If the data is being converted from a format like .ptu from picoquant or .spc from
 Beckr&Hickl, some metadata stored in the file is not included in the official photon-HDF5
 specification. This metadata should be stored in a group named by the company manufacturing
-the original data file (i.e. `picoquant` for .ptu files, `becker_hickl` for .spc files).
+the original data file (i.e. ``picoquant`` for .ptu files, `b`ecker_hickl`` for .spc files).
 
 The ``user`` group can also be used to store results of various type of analysis.
 Such data should be stored in a sub-group named according to the software used
@@ -584,16 +591,50 @@ analysis under the group ``/user/FRETBursts``.
 Experimental Settings User Group
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 It is often desirable to store additional information and/or explanation of the experiment.
-Such information is best stored in a ``user/experimental_settings`` group. All information in this
+These fields should be values that are not know *a priori* before the measurement, or
+which may have ambiguous definitions or unclear provenance.
+Such information is best stored in a ``/user/experimental_settings/`` group. All information in this
 group should be stored in a way that is self-explanatory, with human-readable details included.
 
-If :ref:`marker IDs<marker_ids>`) are included in ``/photon_data/detectors``,
+If :ref:`non-photon IDs<non_photon_ids>`) are included in ``/photon_data/detectors``,
 ``/user/experimental_settings/`` is the preferred location to specify the significance
-of each marker ID.
+of each non-photon ID.
 
-If values such as FRET correction factors are stored, the specific definition and method by which
-they were determined should be included as well so that interpretation can be made unambiguous.
-We suggest using the definition in `Hellenkamp et. al. 2018 <https://doi.org/10.1038/s41592-018-0085-0>`_
+FRET correction factors can be stored within ``/user/experimental_settings/``, 
+each should contain 1 element per `photon_dataN`` group:
+
+- **gamma** (float or float array) The gamma correction factor, correcting for differences
+  in detection efficiency and fluorophore brightness between donor and acceptor.
+- **beta** (float or float array) The beta correction factor, correcting for differences
+  in donor and acceptor excitation.
+- **direct_excitation** (float or float array) the direct excitation fraction, accounting for
+  the fraction of acceptor directly excited by donor laser.
+- **leakage** (float or float array) the leakage factor accounting for the
+- **fret_provenance** (string) a human readable string defining how the FRET correction
+  factors were determined and a doi to the definition used for the correction factors.
+  We suggest the following ``https://doi.org/10.1038/s41592-018-0085-0``
+  (`Hellenkamp et. al. 2018 <https://doi.org/10.1038/s41592-018-0085-0>`_)
+
+.. note::
+    If any FRET correction factor is stored, the ``fret_provenance`` field
+    should also be included so that users will know how to apply the supplied
+    correction factors correctly.
+
+Additional fields are suggested for storing information about each detector's
+(ie instruments that generate photon IDs) background and afterpulsing characteristics:
+
+- **dcr** (float array): *Optional.* Dark counting rate in Hz for each pixel.
+  If present, must be of the same length as ``id``.
+  This value should be 0 for positions corresponding to 0 for marker IDs.
+- **dcr_provenance** (string) Human readable description for how the dcr was determined.
+- **afterpulsing** (float array): *Optional.* Afterpulsing probability
+  for each record ID. If present, must be of the same length as ``id``.
+  This value should be 0 for positions corresponding to 0 for non-photon IDs.
+- **afterpulsing_provenance** (string) Human readable description for how the
+  afterpulsing was determined.
+
+In general, the method for determining any value in ``/user/experimental_settings/`` should
+be specified as a string in a ``[value]_provenance`` group.
 
 See <link to notebook to be created> for an example of how to use the */user/experimental_settings/**
 group.
@@ -604,20 +645,19 @@ group.
 Additional notes and definitions
 --------------------------------
 
-.. _record_ids:
+.. _detector_ids:
 
-Record IDs
-^^^^^^^^^^
+Detector IDs
+^^^^^^^^^^^^
 
-A *record ID* is the "name" for each type of event recorded in ``/photon_data/detectors``.
-These are divided into two broad types: "detector IDs" and "marker IDs".
-In previous versions these were sometimes also referred to as pixel IDs
-Simply put a detector ID corresponds to an event that results from the arrival of a photon
-at one of the detectors or pixels.
-A "marker ID" is any other type of event (e.g. sync signal, FLIM marker) recorded
+A *detector ID* is the "name" for each type of event recorded in ``/photon_data/detectors``.
+These are divided into two broad types: "photon IDs" and "non-photon IDs".
+In previous versions only photon IDs were handled, and were also referred to as pixel IDs;
+
+A "non-photon ID" is any other type of event (e.g. sync signal, FLIM marker) recorded
 in the original source file/by the TCSPC card.
 
-Record IDs are usually a single integer.
+Detectors IDs are usually a single integer.
 Detectors are normally numbered incrementally, but are not required to be.
 In other words, a file containing data taken with 2 single-point (pixel) detectors could have
 the first detector labeled "4" and the second detector labeled "6".
@@ -627,16 +667,16 @@ the module number and the X, Y location, for example. Therefore, an
 array of record IDs can be either a 1-D column array or a 2-D array.
 In either case, each row identifies a record.
 
-.. _marker_ids:
+.. _non_photon_ids:
 
-Marker IDs
-""""""""""
+Non-Photon IDs
+""""""""""""""
 
 If the acquisition software also records events such as sync signals or markers indicating
 a change in position of a piezo or galvo scanner, these events should also be assigned a unique
 pixel ID. These events are all considered markers. To distinguish between detector (i.e. real photons)
-and marker IDs, the record IDs of marker events must be recorded in one of the `markers1`,
-`markers2` ... groups within ``/photon_data/measurement_specs/detectors_specs`` group.
+and marker IDs, the record IDs of marker events must be recorded in one of the ``non_photon_ch1``,
+``non_photon_ch2`` ... groups within ``/photon_data/measurement_specs/detectors_specs`` group.
 In photon-HDF5 v0.5 no additional information is officially recorded, and thus it is recommended
 to store a description of the meaning of each type of marker ID in the ``user/experimental_settings``
 group. See :ref:`user_group` to understand how to use this group.
@@ -651,13 +691,13 @@ Beam-split channels
 When the emitted light path is split in 2 or more detection paths by using
 a non-polarizing beam splitter the measurement has so called
 beam-split channels. The fields ``split_ch1``, ``split_ch2`` ... contain
-the list of :ref:`detector IDs<record_ids>` for each beam-split channel
+the list of :ref:`detector IDs<detector_ids>` for each beam-split channel
 (see :ref:`detectors_specs_group`).
 
 Beam split channels can receive same or different (depending on whether the
 beam splitter is 50-50). The fractional power of each beam split channel
-can be saved in the field ``detection_split_ch_ratios`` in the
-:ref:`/setup/ group<setup_group>`.
+can be saved in the field ``detection_split_ch_ratios`` in
+the :ref:`/setup/ group<setup_group>`.
 
 
 .. _wavelengths_order:
@@ -680,7 +720,7 @@ Similarly, the donor (or acceptor) excitation period range is defined by
 ``/photon_data/measurement_specs/alex_excitation_period1``
 (or ``/photon_data/measurement_specs/alex_excitation_period2``).
 
-Finally the donor (or acceptor) :ref:`detector IDs<record_ids>` number is defined in
+Finally the donor (or acceptor) :ref:`detector IDs<detector_ids>` number is defined in
 ``/photon_data/measurement_specs/detectors_specs/spectral_ch1``
 (or ``/photon_data/measurement_specs/detectors_specs/spectral_ch2``).
 
