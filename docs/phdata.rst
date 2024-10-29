@@ -266,7 +266,7 @@ If a measurement records more than 1 polarization state, the fields:
 - **polarization_ch2**
 - etc...
 
-specify which detector pixel is used for each polarization. When the measurement
+specify which detector ID is used for each polarization. When the measurement
 records only one polarization, these fields may be omitted.
 
 When the detection light is split into 2 channels using a non-polarizing
@@ -276,12 +276,12 @@ beam-splitter the fields:
 - **split_ch2**
 - etc..
 
-specify which detector pixel is used in each of the "beam-split" channels.
+specify which detector ID is used in each of the "beam-split" channels.
 
 If :ref:`non-photon IDs <non_photon_ids>` are also recorded, then the fields (*new in v0.5*):
 
-- **non_photon_ch1**
-- **non_photon_ch2**
+- **non_photon_id1**
+- **non_photon_id2**
 - etc...
 
 are used to categorize each non-photon id. Currently there are no specifications
@@ -292,17 +292,30 @@ All official software for v0.5 will ignore data points specified as non-photon I
 Future releases may specify sorts of measurements that will have defined uses
 for particular non-photon IDs.
 
+
+.. note::
+
+    Use of :ref:`non-photon IDs <non_photon_ids>` is discouraged as their purpose
+    is defined in the :ref:`/user/experimental_settings<exp_settings>` group,
+    and thus lack an internal definition. They also may break backwards
+    compatibility with software designed to use v0.4 and earlier photon-HDF5
+    files. Include these only in absolutely necessary. Otherwise it is preferable
+    to remove them from the data stream to make interpretation of the data
+    unambiguous.
+
+
 All previous fields are arrays containing one or more :ref:`detector IDs<detector_ids>`
 (Detector IDs for all ``spectral_chX``, ``polarization_ch1`` and ``split_chX``,
 and :ref:`non-photon IDs <non_photon_ids>` for ``non_photon_chX``).
-For example, a 2-color smFRET measurement without polarization or split channels
-(2 detectors) will have only one value in ``spectral_ch1`` (donor) and one value in
-``spectral_ch2`` (acceptor). A 2-color smFRET measurement with polarization
+If a given experiment type does not involve a given field type, that field should
+be omitted. For example, a 2-color smFRET measurement without polarization or split
+channels (2 detectors) will have only one value in ``spectral_ch1`` (donor) and one
+ value in ``spectral_ch2`` (acceptor). A 2-color smFRET measurement with polarization
 (4 detectors) will have 2 values in each of the ``spectral_chX`` and
 ``polarization_chX`` fields (where X=1 or 2).
 For a multispot smFRET measurement, in each ``/photon_dataX/`` group,
-there will be ``spectral_chX`` fields containing the donor/acceptor
-pixels used in that spot (see :ref:`multi_spot`).
+there will be ``spectral_chX`` fields containing the donor/acceptor detector IDs
+(pixels) used in that spot (see :ref:`multi_spot`).
 
 
 .. _setup_group:
@@ -347,7 +360,7 @@ When setup is present, the following 9 fields are mandatory:
   If field is greater than 1 there should be equivalent number of
   ``/photon_dataX/`` groups (see :ref:`multi_spot`)
 
-- **num_pixels**: (integer) total number of detector pixels. For example,
+- **num_pixels**: (integer) total number of detector ids. For example,
   for a single-spot 2-color smFRET measurement using 2 single-pixel SPADs as
   detectors this field is 2. This field is normally equal to
   ``num_pixels = num_spectral_ch * num_split_ch * num_polarization_ch * num_spot``.
@@ -386,7 +399,7 @@ Detectors group
 ^^^^^^^^^^^^^^^^
 
 *New in version 0.5.* The group ``/setup/detectors/``
-contains arrays with one element per detector (detector id aka pixel).
+contains arrays with one element per detector (detector ID).
 This group may be **absent** *if* the :ref:`/photon_data/<photon_data>` group(s) do **not** contain ``detectors`` arrays.
 The allowed fields are:
 
@@ -397,12 +410,12 @@ The allowed fields are:
       acquisition hardware if different from ``id``.
     - **spot** (integer array): *Multispot only, mandatory.* The spot number each
       detector ID is used in. If present, must be of the same length as ``id``.
-    - **label** (array of string): *Optional.* A human-readable label for each detector, including marker IDs.
+    - **label** (array of string): *Optional.* A human-readable label for each detector ID, includind non-photon IDs.
       If present, must be of the same length as ``id``.
     - **module** (array of string): *Multispot only, optional.* Name of the module each
       pixel belongs to. If present, must be of the same length as ``id``.
     - **position** (2-D integer array): *Multispot only, optional.* Columns are x,y
-      positions of each spot in the array. Must be of the length specified 
+      positions of each spot in the array. Must be of the length specified
       in ``num_spots``.
     - **tcspc_unit:** (float array) array of TAC/TDC bin size (in seconds).
       Present only if ``/setup/lifetime`` is True and if TCSPC info is different
@@ -596,11 +609,15 @@ which may have ambiguous definitions or unclear provenance.
 Such information is best stored in a ``/user/experimental_settings/`` group. All information in this
 group should be stored in a way that is self-explanatory, with human-readable details included.
 
-If :ref:`non-photon IDs<non_photon_ids>`) are included in ``/photon_data/detectors``,
-``/user/experimental_settings/`` is the preferred location to specify the significance
-of each non-photon ID.
+If :ref:`non-photon IDs<non_photon_ids>` are included in
+``/photon_data/detectors``, ``/user/experimental_settings/`` should contain the
+group ``non_photon_id/`` with strings named ``id1``, ``id2`` ... which contain
+human-readable explanations of the role of each :ref:`non-photon IDs<non_photon_ids>`
+group of detectors (numbered identically. Additional explanation can be included as
+a human readable string named ``non_photon_id_explanation``.
 
-FRET correction factors can be stored within ``/user/experimental_settings/``, 
+
+FRET correction factors can be stored within ``/user/experimental_settings/``,
 each should contain 1 element per `photon_dataN`` group:
 
 - **gamma** (float or float array) The gamma correction factor, correcting for differences
@@ -659,7 +676,7 @@ in the original source file/by the TCSPC card.
 
 Detectors IDs are usually a single integer.
 Detectors are normally numbered incrementally, but are not required to be.
-In other words, a file containing data taken with 2 single-point (pixel) detectors could have
+In other words, a file containing data taken with 2 single-point detectors could have
 the first detector labeled "4" and the second detector labeled "6".
 In some cases (when using detector arrays) the record ID
 can be a *n*-tuple of integers. This allow to specify, for each pixel,
@@ -682,6 +699,11 @@ to store a description of the meaning of each type of marker ID in the ``user/ex
 group. See :ref:`user_group` to understand how to use this group.
 
 
+.. note::
+
+    Inclusion of non-photon ids is discouraged for backwards compatibility.
+    Please only include if necessary, otherwise filter these events out of the
+    data before saving the photon-HDF5 file.
 
 .. _beam_split_ch:
 
@@ -767,8 +789,7 @@ Each *measurement_type* has an associated set of mandatory fields
 which must be present to ensure that all information needed to
 unambiguously interpret the data is present.
 For example, for a 2-color smFRET measurement, a software package creating
-a file should check that
-the association between detector-pixel and donor or acceptor channel
+a file should check that the association between detector ID (previously called pixel) and donor or acceptor channel
 is present.
 
 The list of supported measurement types is reported in :ref:`measurement_specs_group`.
@@ -804,21 +825,21 @@ Group /setup/detectors/
 ^^^^^^^^^^^^^^^^^^^^^^^
 
 This group is new in version 0.5 and contains fields which are arrays, one
-element per detector or marker (see :ref:`definition<detectors_group>`).
+element per detector ID (both photon and non-photon) (see :ref:`definition<detectors_group>`).
 The only mandatory field is ``id`` which contains
 all detectors IDs as they appear in ``/photon_data/detectors``.
 Within each spot, IDs appear in ``/setup/detectors/id`` in increasing order.
 All values which appears in ``/photon_data/detectors`` need to be listed here.
-This includes non-standard detectors (e.g. a monitor channel to monitor the input power)
-or "markers" saved by the acquisition hardware (for example PicoQuant TCSPC
-hardware can save makers for synchronization). However, special record IDs used for
-overflow correction must be removed before saving a Photon-HDF5 file.
+Note that while v0.5 now has soft-support for non-photon IDs, supporting such events
+as markers for FLIM, sync signals from the TCSPC card, signals for monitoring laser
+power etc. overflow markers such as those present in many Picoquant formats must
+be removed.
 
-In TCSPC measurements where each pixel has different TCSPC bin width,
-the ``/setup/detectors`` group allows to save per-pixel TCSPC info.
+In TCSPC measurements where each detector (pixel) has different TCSPC bin width,
+the ``/setup/detectors`` group allows to save per-photon detector TCSPC info.
 In this case the the
 ``nanotimes_specs`` group is not present in ``photon_data`` and the group
-``/setup/detectors`` will contain per-pixel TCSPC info::
+``/setup/detectors`` will contain per-photon detector TCSPC info::
 
     /setup/detectors/tcspc_units
     /setup/detectors/tcspc_num_bins
