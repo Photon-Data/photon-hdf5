@@ -123,8 +123,8 @@ fields must be present:
     In the unusual case where detectors in a single spot do not share the same
     settings, then ``nanotimes_specs`` should be omitted and the data
     exclusively stored in the equivalent fields in ``/setup/detectors/`` where
-    per-detector settings can be stored, but this will break backwards
-    compatibility with <0.5
+    per-detector settings can be stored. Doing so will mean readers of <v0.5 will
+    not be able to read the file.
 
 Finally, if the data come from a simulation, ``/photon_data/`` may contain:
 
@@ -195,9 +195,10 @@ For alternated excitation experiments (e.g. μs-ALEX and ns-ALEX), the following
 fields are used to specify the alternation period:
 
 - **alex_excitation_period1**: (integer array with an even-number of
-  elements, normally 2) start and stop values identifying the excitation
-  periods for the **first** wavelength in ``/setup/excitation_wavelengths``
-  (which is the shortest wavelength).
+  elements, normally 2) start and stop value(s) identifying the excitation
+  period(s) for the **first** wavelength in ``/setup/excitation_wavelengths``
+  (which is the shortest wavelength). Indexing of start and stop value(s)
+  starts from 0, and the period is defined as [start, stop).
   In smFRET experiments with 2-colors excitation this field defines the
   *donor excitation period*.
   See also :ref:`wavelengths_order` and note below.
@@ -297,11 +298,11 @@ for particular non-photon IDs.
 
     Use of :ref:`non-photon IDs <non_photon_ids>` is discouraged as their purpose
     is defined in the :ref:`/user/experimental_settings<exp_settings>` group,
-    and thus lack an internal definition. They also may break backwards
-    compatibility with software designed to use v0.4 and earlier photon-HDF5
-    files. Include these only in absolutely necessary. Otherwise it is preferable
-    to remove them from the data stream to make interpretation of the data
-    unambiguous.
+    and thus lack an internal definition. Additionally, the use of non-photon ids
+    may cause poorly implemented readers designed for <v0.5 to incorrectly interpret
+    the data. Therefore include non-photon ids only if absolutely necessary.
+    Otherwise it is preferable to remove them from the data stream to make 
+    interpretation of the data unambiguous.
 
 
 All previous fields are arrays containing one or more :ref:`detector IDs<detector_ids>`
@@ -410,7 +411,7 @@ The allowed fields are:
       acquisition hardware if different from ``id``.
     - **spot** (integer array): *Multispot only, mandatory.* The spot number each
       detector ID is used in. If present, must be of the same length as ``id``.
-    - **label** (array of string): *Optional.* A human-readable label for each detector ID, includind non-photon IDs.
+    - **label** (array of string): *Optional.* A human-readable label for each detector ID, including non-photon IDs.
       If present, must be of the same length as ``id``.
     - **module** (array of string): *Multispot only, optional.* Name of the module each
       pixel belongs to. If present, must be of the same length as ``id``.
@@ -701,8 +702,8 @@ group. See :ref:`user_group` to understand how to use this group.
 
 .. note::
 
-    Inclusion of non-photon ids is discouraged for backwards compatibility.
-    Please only include if necessary, otherwise filter these events out of the
+    Inclusion of non-photon ids is discouraged for <v0.5 compatibility reasons.
+    Please include only if necessary, otherwise filter these events out of the
     data before saving the photon-HDF5 file.
 
 .. _beam_split_ch:
