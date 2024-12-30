@@ -311,7 +311,7 @@ and :ref:`non-photon IDs <non_photon_ids>` for ``non_photon_chX``).
 If a given experiment type does not involve a given field type, that field should
 be omitted. For example, a 2-color smFRET measurement without polarization or split
 channels (2 detectors) will have only one value in ``spectral_ch1`` (donor) and one
- value in ``spectral_ch2`` (acceptor). A 2-color smFRET measurement with polarization
+value in ``spectral_ch2`` (acceptor). A 2-color smFRET measurement with polarization
 (4 detectors) will have 2 values in each of the ``spectral_chX`` and
 ``polarization_chX`` fields (where X=1 or 2).
 For a multispot smFRET measurement, in each ``/photon_dataX/`` group,
