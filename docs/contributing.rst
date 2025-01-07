@@ -57,8 +57,8 @@ There are several ways you can get involved:
   `this one <https://github.com/Photon-HDF5/phconvert>`__.
 
 
-Contributions Acknowledgement
------------------------------
+Contributions Acknowledgment
+----------------------------
 
 Any contributions to this documentation will be listed in the front page, just below
 the authors.
@@ -76,3 +76,46 @@ Contributor Code of Conduct
 
 The Photon-HDF5 team subscribes to the Contributor Covenant, version 1.0.0, available from 
 http://contributor-covenant.org/version/1/0/0/.
+
+.. _compatibility:
+
+Maintaining Compatibility
+-------------------------
+
+Maintaining compatibility between versions is important.
+
+Compatibility can be broadly definined in two ways
+
+1. **Backward compatibility** means that files from previous version can be read and used by
+   newer versions.
+2. **Forward compatibility** means that files from newer versions can be read by older versions.
+
+Backward compatibility is generally much easier to maintian, as it largely means not removing
+anything from the format or changing something once it is established.
+Forward compatibility on the other hand is more complicated, as new features cannot be read by
+older versions, basically by definition. So the principle is that an older version should be
+able to interpret any file of a newer version that does *not* contain/use the new feature.
+Additionally, the new feature should be added in a way that older versions can still read
+the data that does not involve the new feature.
+
+In Photon-HDF5, new versions must be backwards compatible, and foward compatibility should be
+maintained as much as possible. For this we have 5 main principles for maintaining compatibility:
+
+#. New fields should always be optional/conditionally mandatory (i.e. mandatory only when a new
+   feature is used in the particular experiment) with minor version updates, major version
+   updates may make a new field mandatory.
+#. The data type (options) of a field will not change from version to version.
+#. Fields cannot be removed.
+#. Whether or not a field is required must be implemented in a way consistent with previous
+   versions, meaning:
+
+   a. Any field introduced as mandatory will necessarily be mandatory in all future versions
+   b. For conditionally mandatory fields, if a set of conditions requires a field to be
+      mandatory in a previous version, it will also be mandatory under those conditions
+      in future versions.
+   c. In cases where new features (usually in another field) are added, then the new
+      implementation should keep the field mandatory in all cases where, ignoring the new feature.
+#. Validators should be considered version specific, they cannot validate photon-HDF5 files of
+   versions newer that what they were designed for. However, we can implement a
+   "permissive/strict" option (or other similar name) determining whether or not the validator
+   checks for unknown fields, and whether or not to throw an error or simply warn.

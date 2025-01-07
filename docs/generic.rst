@@ -6,6 +6,9 @@ For measurement types which cannot be described by any other
 it is possible to use the "generic" type and use the ``/setup``
 fields to describe the exact configuration.
 
+The "generic" type is the encouraged type for most experiments
+going forward, as it supports arbitrary configurations.
+
 
 Examples
 --------
@@ -25,8 +28,8 @@ A setup detecting two polarizations in the detection path will be defined by::
 and will also specify the detector used for each polarizations::
 
     /photon_data/measurement_specs/detectors_specs/
-        polarization_ch1 = 0
-        polarization_ch2 = 1
+        polarization_ch1 = [0, ]
+        polarization_ch2 = [1, ]
 
 (where the values 0 and 1 are only examples). In addition ``/setup/lifetime``
 will indicate whether the measurement has TCSPC data or not. Finally, the optional field
@@ -46,8 +49,8 @@ in two using a non-polarizing beam splitter will be defined by::
 and the measurement_specs will contain::
 
     /photon_data/measurement_specs/detectors_specs/
-        split_ch1 = 0
-        split_ch2 = 1
+        split_ch1 = [0, ]
+        split_ch2 = [1, ]
 
 (where the values 0 and 1 are only examples). In addition ``/setup/lifetime``
 will indicate whether the measurement has TCSPC data or not. Finally, the optional
@@ -74,8 +77,8 @@ as in the "smFRET" ``measurement_type``. In particular::
 and::
 
     /photon_data/measurement_specs/detectors_specs/
-        spectral_ch1 = 0
-        spectral_ch2 = 1
+        spectral_ch1 = [0, ]
+        spectral_ch2 = [1, ]
 
 TCSPC measurements
 ^^^^^^^^^^^^^^^^^^

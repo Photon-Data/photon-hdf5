@@ -9,7 +9,7 @@ please contact us.
 Timestamps with rollover
 ------------------------
 
-In Photon-HDF5 timestamps are always signed 64 bit integers. Thanks to
+In Photon-HDF5 timestamps are usually signed 64 bit integers. Thanks to
 compression, there is no size penalty compared to 32 bit integers. Most
 timestamping hardware produce a timestamp with 24 or 32 bits
 and a rollover flag in order to compute the full "unwrapped" timestamp.

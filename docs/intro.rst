@@ -12,7 +12,9 @@ as a standard container format for a broad range of experiments
 involving confocal microscopy. Examples are confocal smFRET
 experiments performed with a single or multiple excitation spots.
 Both `μs-ALEX <http://dx.doi.org/10.1529/biophysj.104.054114>`_
-and ns-ALEX data are supported.
+and `PIE <https://doi.org/10.1529/biophysj.105.064766>`_
+(aka `ns-ALEX <https://doi.org/10.1073/pnas.0508584102>`_)data
+are supported.
 
 
 What problems are we trying to solve?
@@ -47,7 +49,8 @@ The main design principles are:
 
 We aim to define a format that has a minimal set of specifications and therefore
 is easy to implement. At the same time, it is important that the format can be
-expanded to accommodate new use cases while maintaining backward compatibility.
+expanded to accommodate new use cases while maintaining backward compatibility
+(see :ref:`compatibility`.
 
 To achieve simplicity, the only required file characteristics are a
 general file layout and the presence of a few basic attributes and parameters.
